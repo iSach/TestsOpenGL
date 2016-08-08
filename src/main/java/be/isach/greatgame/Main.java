@@ -1,6 +1,7 @@
 package be.isach.greatgame;
 
 import be.isach.greatgame.render.component.Component;
+import be.isach.greatgame.util.MacIconSetter;
 import org.lwjgl.LWJGLUtil;
 
 import java.io.File;
@@ -14,13 +15,14 @@ import java.io.File;
 public class Main  {
 
     public static void main(String... args) {
-        setupNative();
+        setup();
+
         System.out.println("slt ça farte ?");
         Component component = new Component();
         component.start();
     }
 
-    private static void setupNative()
+    private static void setup()
     {
         switch (LWJGLUtil.getPlatform())
         {
@@ -30,6 +32,7 @@ public class Main  {
 
             case LWJGLUtil.PLATFORM_MACOSX:
                 System.setProperty("org.lwjgl.librarypath", new File("native/macosx").getAbsolutePath());
+                MacIconSetter.setIcon("icon.png");
                 break;
 
             case LWJGLUtil.PLATFORM_LINUX:

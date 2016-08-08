@@ -1,11 +1,20 @@
 package be.isach.greatgame.render.component;
 
-import be.isach.greatgame.render.moveable.Square;
+import be.isach.greatgame.game.Game;
+import be.isach.greatgame.render.graphic.Renderer;
+import be.isach.greatgame.util.Color3i;
+import be.isach.greatgame.util.IconLoader;
 import org.lwjgl.LWJGLException;
-import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
+import org.lwjgl.util.Color;
+import org.lwjgl.util.ReadableColor;
 import org.lwjgl.util.glu.GLU;
+
+import javax.imageio.ImageIO;
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.regex.Pattern;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -17,67 +26,80 @@ import static org.lwjgl.opengl.GL11.*;
  */
 public class Component {
 
-    private static final int SCALE = 3, WIDTH = 720 / SCALE, HEIGHT = 480 / SCALE, MAX_FPS = 144;
-    private static final String TITLE = "slt gaprand lwjgl";
+    private static final int SCALE = 3;
+    private static final String TITLE = "slt gaprand lwjgl |";
+    private static final double TICKS_PER_SECOND = 50;
+    public static int WIDTH = 720 / SCALE, HEIGHT = 480 / SCALE;
+    private static boolean tick = false;
+    private static boolean render = false;
 
-    private DisplayMode displayMode = new DisplayMode(WIDTH * SCALE, HEIGHT * SCALE);
     private boolean running = false;
-    private int r = 0, g = 0, b = 255; // def color
-    private long ticks = 0;
-
-    private Square square;
+    private long ticks = 0, frames = 0;
+    private Game game;
 
     public Component() {
         try {
-            Display.setDisplayMode(displayMode);
+            Display.setDisplayMode(new DisplayMode(WIDTH * SCALE, HEIGHT * SCALE));
             Display.setResizable(true);
             Display.setFullscreen(false);
             Display.setVSyncEnabled(false);
             Display.setTitle(TITLE);
             Display.create();
-            initGl();
+            File file = new File("/Users/sachalewin/Desktop/icon.png");
+            Display.setIcon(IconLoader.load(file));
         } catch (LWJGLException e) {
             e.printStackTrace();
         }
+        this.game = new Game();
     }
 
-    public void update() {
-        if(square == null) {
-            square = new Square(50);
-        }
-
-        square.update();
-
-        if(Mouse.isButtonDown(0)) {
-            int x = Mouse.getX() / SCALE;
-            int y = Mouse.getY() / SCALE;
-
-            square.setX(x);
-            square.setY(y);
-
-            System.out.println("MOUSE DOWN @ X: " + x + " Y: " + y);
-            System.out.println(square);
-        }
-
-        ticks++;
+    public void tick() {
+        this.game.tick();
     }
 
     private void render() {
-        square.render();
+        view2d(WIDTH, HEIGHT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        this.game.render();
     }
 
     private void loop() {
+        long before = System.nanoTime(), timer = System.currentTimeMillis();
+        double elapsed = 0;
+        double nanoSeconds = 1000000000 / TICKS_PER_SECOND;
+
         while (running) {
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             if (Display.isCloseRequested()) {
                 stop();
                 break;
             }
 
-            update();
-            render();
+            if (Display.wasResized()) {
+                WIDTH = Display.getWidth() / SCALE;
+                HEIGHT = Display.getHeight() / SCALE;
+            }
 
+            long now = System.nanoTime();
+            elapsed = now - before;
+
+            if (elapsed >= nanoSeconds) {
+                before += nanoSeconds;
+                tick();
+                ticks++;
+            } else {
+                Display.sync(144);
+                render();
+                frames++;
+            }
+
+            if (System.currentTimeMillis() - timer > 1000) {
+                timer += 1000;
+                Display.setTitle(Display.getTitle().split(Pattern.quote("|"))[0] + "| FPS: " + frames);
+                ticks = 0;
+                frames = 0;
+            }
             Display.update();
         }
         exit();
@@ -85,6 +107,7 @@ public class Component {
 
     public void start() {
         this.running = true;
+        this.game.init();
         loop();
     }
 
@@ -97,12 +120,21 @@ public class Component {
         System.exit(0);
     }
 
-    private void initGl() {
+    private void view2d(int width, int height) {
+        glViewport(0, 0, width * SCALE, height * SCALE);
+
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        GLU.gluOrtho2D(0, WIDTH, HEIGHT, 0);
+        GLU.gluOrtho2D(0, width, height, 0);
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
     }
 
+    public long getTicks() {
+        return ticks;
+    }
+
+    public long getFrames() {
+        return frames;
+    }
 }
