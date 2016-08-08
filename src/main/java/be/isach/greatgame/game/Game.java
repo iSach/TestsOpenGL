@@ -32,7 +32,7 @@ public class Game {
     }
 
     public void tick() {
-        translateView(-.1f, -.1f);
+        translateView(-.5f, -.5f);
 
         this.level.tick();
     }

@@ -26,7 +26,6 @@ public class Tile {
 
     public void render() {
         Renderer.renderQuad(x * SIZE, y * SIZE, SIZE, SIZE, color);
-        System.out.println("a");
     }
 
     public int getX() {
