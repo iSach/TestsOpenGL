@@ -89,7 +89,6 @@ public class Component {
                 tick();
                 ticks++;
             } else {
-                Display.sync(144);
                 render();
                 frames++;
             }
